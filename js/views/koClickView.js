@@ -1,22 +1,4 @@
-﻿/*
-    Features still needed:
-    1. Save a players state - Local Storage (modernizer detection)
-        a. Have totalCurrency and ClickPS saved, need to save the observable array.
-    2. Add Firefox support for animations
-    3. Increase price after purchase
-    4. Add iPhone, iPad specific meta tags and Touch support
-        Tried using fastclick, this works on the iPhone in a webView, but doesn't seem to on Safari or Chrome browsers on Mobile.
-        https://github.com/ftlabs/fastclick
-    5. Use SVG files, creative commons:
-        http://thenounproject.com
-
-    DONE:
-    * DONE: Only accrue ClicksPS every second
-
-*/
-
-
-// Class representing Item Button
+﻿// Class representing Item Button
 function ItemButton(name, price, cps, symbol, owned, basePrice) {
     var self = this;
     self.name = name;
@@ -30,6 +12,31 @@ function ItemButton(name, price, cps, symbol, owned, basePrice) {
         // Use accounting.js to format money
         return accounting.formatMoney(self.price(),"$",0);
     })
+
+    // Check to see if a player can afford an item
+    self.canAfford = ko.computed(function(){
+        var pCash = koClickView.playerCash();
+        if(self.price() <= pCash){
+           return true;
+        } else {
+            return false;
+        }
+    })
+
+    self.affordProgressValue = ko.computed(function(){
+        var pCash = koClickView.playerCash();
+        return pCash / self.price();
+    })
+
+    self.showProgress = ko.computed(function(){
+        var pCash = koClickView.playerCash();
+        if(pCash/self.price() < 1){
+            return true;
+        } else {
+            return false;
+        }
+    })
+
 
     // Buying an item increases the price as well
     // Using the compound interest formula
@@ -50,7 +57,6 @@ function ItemButton(name, price, cps, symbol, owned, basePrice) {
     self.sellItem = function (e){
         if(self.owned() > 0){
             // Calculate the refund
-            //alert(self.price());
             var refund = 0;
             if(self.owned() === 1){
                 refund = (self.basePrice() + (self.basePrice() * (.05 * self.owned()))  *.9);
@@ -70,12 +76,12 @@ function ItemButton(name, price, cps, symbol, owned, basePrice) {
     }
 }
 
-function Player(name,score){
+function Player(name){
     this.name = name;
-    this.score = ko.observable(score);
+    this.currency = ko.observable(totalCurrency);
 }
 
-// Viewmodel for this screen
+// Viewmodel for the click application.
 var koClickView =  {    
     buttons : ko.observableArray([]),
     playerCash : ko.observable(0)
@@ -98,7 +104,6 @@ var clickItems = [
 function resetKoData() {
     koClickView.buttons = ko.observableArray([]);
     loadKoData(clickItems);
-
 }
 
 function loadKoData(clickItems){
